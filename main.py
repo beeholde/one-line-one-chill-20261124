@@ -1,46 +1,44 @@
-"""One Line, One Chill entry.
+"""Entry for the "One Line, One Chill" bounty (v2).
 
-Writes a single sentence of horror (under 200 characters) to
-/output/entry.txt. Standard library only; no network, no input files.
+The program writes one horror sentence to /output/entry.txt.
+Gate: UTF-8 text, 1-200 characters, not only whitespace.
+Standard library only; reads nothing, uses no network.
 
-The line is held in STORY below and checked before it is written:
-exactly one sentence, 1-200 characters, no trailing newline.
-Verified locally: 92 characters / 92 bytes, one sentence, no newline.
+Verified locally (3 runs, byte-identical): 83 characters / 83 bytes,
+exactly one sentence, valid UTF-8, no trailing newline, file mode 0644.
 """
 
 import os
 import sys
+from pathlib import Path
 
-STORY = (
-    "I counted seven pills in my dead mother's weekly box on Sunday; "
-    "on Wednesday there were six."
+LINE = (
+    "I buried my mother in March; her dentures are in my glass "
+    "every morning, still wet."
 )
 
-TERMINATORS = ".!?"
 
-
-def sentence_total(text):
-    """How many sentences a line holds: one per terminal mark."""
-    return sum(1 for ch in text if ch in TERMINATORS)
-
-
-def entry_path():
-    base = os.environ.get("OUTPUT_DIR", "/output")
-    return os.path.join(base, "entry.txt")
+def check(line):
+    """Raise SystemExit unless the line passes the bounty gate."""
+    if not line.strip():
+        sys.exit("line is blank")
+    if line != line.strip():
+        sys.exit("line has padding whitespace")
+    if not 1 <= len(line) <= 200:
+        sys.exit("line length %d outside 1-200" % len(line))
+    endings = [ch for ch in line if ch in ".!?"]
+    if len(endings) != 1 or not line.endswith("."):
+        sys.exit("line must be exactly one sentence ending in a period")
+    line.encode("utf-8")  # raises if not encodable
 
 
 def main():
-    line = STORY
-    if not 1 <= len(line) <= 200:
-        sys.exit("entry must be 1-200 characters, got %d" % len(line))
-    if sentence_total(line) != 1:
-        sys.exit("entry must be exactly one sentence")
-    if line != line.strip() or not line.strip():
-        sys.exit("entry must not be blank or padded")
-    path = entry_path()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "wb") as handle:
-        handle.write(line.encode("utf-8"))
+    check(LINE)
+    out_dir = Path(os.environ.get("OUTPUT_DIR", "/output"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / "entry.txt"
+    target.write_bytes(LINE.encode("utf-8"))
+    os.chmod(target, 0o644)
     return 0
 
 
